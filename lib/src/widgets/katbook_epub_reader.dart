@@ -695,49 +695,6 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
     );
   }
 
-  // Widget _buildChapterHeader(BuildContext context, int chapterIndex, ReaderThemeData theme) {
-  //   final flatChapters = widget.controller.flatChapters;
-  //   if (chapterIndex < 0 || chapterIndex >= flatChapters.length) {
-  //     return const SizedBox.shrink();
-  //   }
-
-  //   final chapter = flatChapters[chapterIndex];
-    
-  //   // Skip header if chapter title is empty
-  //   if (chapter.title.isEmpty) {
-  //     return const SizedBox.shrink();
-  //   }
-
-  //   if (widget.chapterHeaderBuilder != null) {
-  //     return widget.chapterHeaderBuilder!(context, chapter);
-  //   }
-
-  //   return Container(
-  //     width: double.infinity,
-  //     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
-  //     child: Column(
-  //       crossAxisAlignment: CrossAxisAlignment.start,
-  //       children: [
-  //         if (chapterIndex > 0)
-  //           Divider(
-  //             color: theme.textColor.withValues(alpha: 0.2),
-  //             thickness: 1,
-  //             height: 32,
-  //           ),
-  //         Text(
-  //           chapter.title,
-  //           style: TextStyle(
-  //             color: theme.textColor,
-  //             fontSize: _fontSize + 6,
-  //             fontWeight: FontWeight.bold,
-  //             height: 1.3,
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
   void _handleLinkTap(String href) {
     // Handle internal and external links
     if (href.startsWith('http://') || href.startsWith('https://')) {
