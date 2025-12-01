@@ -1,0 +1,24 @@
+name: katbook_epub_reader_example
+description: Example application for katbook_epub_reader package
+publish_to: 'none'
+version: 1.0.0
+
+environment:
+  sdk: ^3.0.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  katbook_epub_reader:
+    path: ../
+  http: ^1.6.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/

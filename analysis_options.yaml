@@ -1,0 +1,11 @@
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    - prefer_single_quotes
+    - sort_constructors_first
+    - sort_unnamed_constructors_first
+    - always_declare_return_types
+    - prefer_final_fields
+    - prefer_const_constructors
+    - prefer_const_declarations
