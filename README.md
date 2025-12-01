@@ -673,7 +673,6 @@ class _EpubReaderWithPositionState extends State<EpubReaderWithPosition> {
   }
 }
 ```
-```
 
 ## License
 
