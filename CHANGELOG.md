@@ -2,97 +2,47 @@
 
 All notable changes to the Katbook EPUB Reader package will be documented in this file.
 
-## [0.1.0] - 2025-11-25
+## [1.0.0] - 2025-12-01
 
-### Added
+### Features
 
-#### Core Features
-- **Hierarchical Chapter Support**: Full support for nested chapters/subchapters at any depth
-- **Three Built-in Themes**: Light, Sepia, and Dark themes with automatic luminance detection
-- **Customizable Typography**: Font size adjustment (8pt-40pt) with theme-aware styling
-- **Reading Progress Tracking**: Real-time progress percentage with position serialization
-- **Position Restoration**: Save and restore reading position between sessions
+#### Core Reader
+- **Full EPUB Support**: Parse and render EPUB 2 and EPUB 3 formats
+- **Hierarchical Table of Contents**: Support for nested chapters at any depth with proper tree structure
+- **Three Built-in Themes**: Light, Sepia, and Dark themes with seamless switching
+- **Adjustable Typography**: Font size control (8-40px) with built-in slider UI
+- **Reading Progress Tracking**: Real-time progress percentage and position tracking
+- **Position Save/Restore**: Resume reading from where you left off with `ReadingPosition.toJson()` and `ReadingPosition.fromJson()`
 
-#### Controllers
-- `KatbookEpubController`: Complete EPUB lifecycle management
-  - Load EPUB from bytes
-  - Build hierarchical table of contents
-  - Parse all paragraphs with metadata
-  - Navigate between chapters and paragraphs
-  - Track reading position and progress
+#### Content Rendering
+- **CSS Parsing**: Parses EPUB stylesheets for proper text alignment and styling
+- **Front Matter Support**: Displays cover pages, dedication, copyright, and other pre-chapter content
+- **Responsive Content Width**: Configurable `contentWidthPercent` (0.0 to 1.0) for centered, readable text columns
+- **Rich HTML Rendering**: Supports headings, paragraphs, lists, blockquotes, code blocks, tables, images, and links
+- **Image Handling**: Robust extraction and display of embedded EPUB images with fallback support
 
-#### Widgets
-- `KatbookEpubReader`: Main reader widget with:
-  - Theme switching in real-time
-  - Font size adjustment UI
-  - AppBar with book title and progress percentage
-  - Drawer with hierarchical table of contents
-  - Content area with proper HTML rendering
-  
-- `TableOfContentsWidget`: Drawer widget featuring:
-  - Hierarchical chapter display with indentation
-  - Current chapter highlighting
-  - Book metadata (title, author)
-  - Optional cover image display
-  
-- `EpubContentRenderer`: Advanced HTML renderer supporting:
-  - Text formatting (bold, italic, underline, strikethrough)
-  - Headings (h1-h6)
-  - Lists (ordered and unordered)
-  - Blockquotes and code blocks
-  - Images with fallback
-  - Tables with horizontal scroll
-  - Links (internal and external)
-  - Superscript and subscript
-  - Figures and captions
+#### Navigation
+- **Drawer-based TOC**: Slide-out table of contents with hierarchical chapter display
+- **Chapter Navigation**: Jump directly to any chapter from TOC
+- **Paragraph Navigation**: `jumpToParagraph()` and `scrollToParagraph()` for precise positioning
 
-#### Models
-- `ReaderTheme`: Enum for three built-in themes
-- `ReaderThemeData`: Theme configuration with 7 color properties
-- `ChapterNode`: Hierarchical chapter representation with recursive structure
-- `ReadingPosition`: Reading state tracking with progress calculation
-- `ParagraphElement`: Parsed paragraph with metadata
+#### Controller
+- `KatbookEpubController`: Manages book loading, state, and navigation
+  - `openBook(Uint8List)`: Load EPUB from bytes
+  - `tableOfContents`: Hierarchical chapter list
+  - `flatChapters`: Flat list of all chapters
+  - `paragraphs`: All parsed paragraphs
+  - `imageData`: Extracted images as `Map<String, Uint8List>`
+  - `currentPosition`: Current reading position
+  - `positionStream`: Stream of position changes
 
-#### Additional Features
-- Robust image handling with multiple fallback strategies
-- StreamController for position change notifications
-- Responsive layout for all screen sizes
-- Smooth scrolling with `ScrollablePositionedList`
-- Position-based navigation instead of string matching
-- Isolate-based EPUB parsing for non-blocking UI
+#### Customization
+- Custom builders for: loading, error, chapter headers, paragraphs, images, and TOC
+- Custom AppBar support via `appBarBuilder`
+- Callbacks: `onPositionChanged`, `onChapterChanged`, `onProgressChanged`
 
-### Changed
-- Completely replaced `epub_view` with custom implementation
-- Updated `pubspec.yaml` in main Katbook app
-- Refactored `epub_reader_view.dart` to use new controller
-
-### Removed
-- Dependency on `epub_view` package
-- Old epub_reader_view implementation
-
-### Fixed
-- **Chapter Ordering**: Proper hierarchical structure instead of flat list
-- **Image Rendering**: No more gray blocks or scroll blocking
-- **TOC Accuracy**: Correct chapter hierarchy display
-- **Position Tracking**: Accurate paragraph indexing
-
-## [Unreleased]
-
-### Planned Features
-- [ ] Bookmark system
-- [ ] Full-text search
-- [ ] Text selection and copying
-- [ ] Note taking and highlights
-- [ ] Dictionary lookup
-- [ ] Cloud sync for reading position
-- [ ] Performance optimizations for large books
-- [ ] Additional themes
-- [ ] Dyslexia-friendly font option
-- [ ] Page-by-page reading mode
-
-### Under Consideration
-- EPUB3 advanced features
-- Comic/manga support
-- Experimental: MOBI format support
-- Language-specific rendering (RTL support)
-- Accessibility improvements (screen reader optimization)
+### Dependencies
+- `epubx` ^4.0.0 - EPUB parsing
+- `html` ^0.15.6 - HTML DOM parsing  
+- `scrollable_positioned_list` ^0.3.8 - Efficient virtualized scrolling
+- `collection` ^1.19.1 - Collection utilities
