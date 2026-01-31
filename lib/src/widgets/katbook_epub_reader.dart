@@ -677,7 +677,7 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
         children: [
           if (showDivider)
             Divider(
-              color: theme.textColor.withValues(alpha: 0.2),
+              color: theme.textColor.withOpacity(0.2),
               thickness: 1,
               height: 32,
             ),

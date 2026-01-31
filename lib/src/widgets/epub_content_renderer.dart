@@ -333,7 +333,7 @@ class EpubContentRenderer extends StatelessWidget {
       case 'br':
         return const SizedBox(height: 8);
       case 'hr':
-        return Divider(color: themeData.textColor.withValues(alpha: 0.3));
+        return Divider(color: themeData.textColor.withOpacity(0.3));
       case 'table':
         return _renderTable(context, element);
       case 'figure':

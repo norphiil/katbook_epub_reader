@@ -103,8 +103,32 @@ class EpubHtmlParser {
   static bool elementContainsAnchor(dom.Element element, String anchor) {
     if (element.id == anchor) return true;
     if (element.attributes['name'] == anchor) return true;
-    if (element.querySelector('#$anchor') != null) return true;
-    if (element.querySelector('[name="$anchor"]') != null) return true;
+    
+    // Use attribute selector instead of #id to avoid CSS selector parsing issues
+    // with IDs containing special characters like dots followed by numbers
+    try {
+      if (element.querySelector('[id="$anchor"]') != null) return true;
+    } catch (_) {
+      // Fallback: manually search for the element
+      if (_findElementById(element, anchor) != null) return true;
+    }
+    
+    try {
+      if (element.querySelector('[name="$anchor"]') != null) return true;
+    } catch (_) {
+      // Ignore selector parsing errors
+    }
+    
     return false;
+  }
+
+  /// Manually find an element by ID (fallback for invalid CSS selectors).
+  static dom.Element? _findElementById(dom.Element parent, String id) {
+    if (parent.id == id) return parent;
+    for (final child in parent.children) {
+      final found = _findElementById(child, id);
+      if (found != null) return found;
+    }
+    return null;
   }
 }
