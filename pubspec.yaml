@@ -1,9 +1,9 @@
 name: katbook_epub_reader
 description: A powerful, customizable EPUB reader for Flutter with proper hierarchical chapter support, theme customization, reading progress tracking, and image handling. Designed to replace epub_view with better features.
 version: 1.0.0
-homepage: https://github.com/katbook/katbook_epub_reader
-repository: https://github.com/katbook/katbook_epub_reader
-issue_tracker: https://github.com/katbook/katbook_epub_reader/issues
+homepage: https://github.com/norphiil/katbook_epub_reader
+repository: https://github.com/norphiil/katbook_epub_reader
+issue_tracker: https://github.com/norphiil/katbook_epub_reader/issues
 
 environment:
   sdk: ^3.0.0
@@ -16,6 +16,7 @@ dependencies:
   html: ^0.15.6
   collection: ^1.18.0
   scrollable_positioned_list: ^0.3.8
+  google_fonts: ^6.3.2
 
 dev_dependencies:
   flutter_test:

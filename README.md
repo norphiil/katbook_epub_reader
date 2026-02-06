@@ -1,5 +1,6 @@
 # Katbook EPUB Reader
 
+[![GitHub](https://img.shields.io/badge/GitHub-norphiil%2Fkatbook__epub__reader-blue?logo=github)](https://github.com/norphiil/katbook_epub_reader)
 [![pub package](https://img.shields.io/pub/v/katbook_epub_reader.svg)](https://pub.dev/packages/katbook_epub_reader)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
