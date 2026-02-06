@@ -7,7 +7,9 @@ import '../controller/katbook_epub_controller.dart';
 import '../models/chapter_node.dart';
 import '../models/paragraph_element.dart';
 import '../models/reader_theme.dart';
+import '../models/reading_mode.dart';
 import '../models/reading_position.dart';
+import 'book_page_view.dart';
 import 'epub_content_renderer.dart';
 import 'table_of_contents.dart';
 
@@ -19,11 +21,13 @@ class KatbookEpubReader extends StatefulWidget {
     required this.controller,
     this.initialTheme = ReaderTheme.light,
     this.initialFontSize = 16.0,
+    this.initialReadingMode = ReadingMode.page,
     this.showAppBar = true,
     this.appBarBuilder,
     this.onPositionChanged,
     this.onChapterChanged,
     this.onProgressChanged,
+    this.onReadingModeChanged,
     this.loadingBuilder,
     this.errorBuilder,
     this.tocBuilder,
@@ -59,6 +63,12 @@ class KatbookEpubReader extends StatefulWidget {
 
   /// Called when the progress percentage changes.
   final void Function(double progress)? onProgressChanged;
+
+  /// Called when the reading mode changes.
+  final void Function(ReadingMode mode)? onReadingModeChanged;
+
+  /// The initial reading mode (scroll or page).
+  final ReadingMode initialReadingMode;
 
   /// Builder for the loading indicator.
   final Widget Function(BuildContext context)? loadingBuilder;
@@ -99,10 +109,12 @@ class KatbookEpubReader extends StatefulWidget {
 class KatbookEpubReaderState extends State<KatbookEpubReader> {
   late ReaderTheme _currentTheme;
   late double _fontSize;
+  late ReadingMode _readingMode;
   bool _tocVisible = false;
   bool _showFontSlider = false;
   
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final GlobalKey<BookPageViewState> _bookPageKey = GlobalKey<BookPageViewState>();
   final ItemScrollController _itemScrollController = ItemScrollController();
   final ItemPositionsListener _itemPositionsListener = ItemPositionsListener.create();
 
@@ -116,6 +128,9 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
 
   /// Gets the current font size.
   double get fontSize => _fontSize;
+
+  /// Gets the current reading mode.
+  ReadingMode get readingMode => _readingMode;
 
   /// Gets the current theme data.
   ReaderThemeData get themeData => ReaderThemeData.fromTheme(_currentTheme);
@@ -137,6 +152,7 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
     super.initState();
     _currentTheme = widget.initialTheme;
     _fontSize = widget.initialFontSize;
+    _readingMode = widget.initialReadingMode;
 
     widget.controller.addListener(_onControllerChanged);
     _itemPositionsListener.itemPositions.addListener(_onScrollPositionChanged);
@@ -237,6 +253,44 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
     setTheme(themes[nextIndex]);
   }
 
+  /// Changes the reading mode.
+  void setReadingMode(ReadingMode mode) {
+    if (_readingMode == mode) return;
+    
+    // Capture current position before switching
+    final currentPosition = widget.controller.currentPosition;
+    final currentParagraphIndex = currentPosition?.paragraphIndex ?? 0;
+    
+    setState(() {
+      _readingMode = mode;
+      _pendingParagraphIndex = currentParagraphIndex;
+    });
+    
+    widget.onReadingModeChanged?.call(mode);
+    
+    // After mode switch, navigate to the same position
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (mode == ReadingMode.scroll) {
+        // Scroll mode - jump to paragraph
+        if (_itemScrollController.isAttached) {
+          _itemScrollController.jumpTo(index: currentParagraphIndex);
+        }
+      }
+      // Page mode handles its own navigation via initialParagraphIndex
+    });
+  }
+  
+  /// Pending paragraph index for mode synchronization
+  int? _pendingParagraphIndex;
+
+  /// Toggles between scroll and page mode.
+  void toggleReadingMode() {
+    setReadingMode(
+      _readingMode == ReadingMode.scroll ? ReadingMode.page : ReadingMode.scroll,
+    );
+  }
+
   /// Changes the font size.
   void setFontSize(double size) {
     if (size < 8.0 || size > 40.0) return;
@@ -285,12 +339,17 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
     if (index < 0 || index > maxIndex) return;
     
     widget.controller.jumpToIndex(index);
-    if (_itemScrollController.isAttached) {
-      // Use scrollTo with minimal duration to avoid layout cycle issues
-      _itemScrollController.scrollTo(
-        index: index,
-        duration: const Duration(milliseconds: 1),
-      );
+    if (_readingMode == ReadingMode.page) {
+      // In page mode, use BookPageView's jumpToParagraph
+      _bookPageKey.currentState?.jumpToParagraph(index);
+    } else {
+      if (_itemScrollController.isAttached) {
+        // Use scrollTo with minimal duration to avoid layout cycle issues
+        _itemScrollController.scrollTo(
+          index: index,
+          duration: const Duration(milliseconds: 1),
+        );
+      }
     }
   }
 
@@ -300,12 +359,18 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
     if (index < 0 || index > maxIndex) return;
     
     widget.controller.jumpToIndex(index);
-    if (_itemScrollController.isAttached) {
-      // Use scrollTo with minimal duration to avoid layout cycle issues
-      _itemScrollController.scrollTo(
-        index: index,
-        duration: const Duration(milliseconds: 1),
-      );
+    
+    if (_readingMode == ReadingMode.page) {
+      // In page mode, use BookPageView's jumpToParagraph
+      _bookPageKey.currentState?.jumpToParagraph(index);
+    } else {
+      // In scroll mode, use ScrollablePositionedList
+      if (_itemScrollController.isAttached) {
+        _itemScrollController.scrollTo(
+          index: index,
+          duration: const Duration(milliseconds: 1),
+        );
+      }
     }
   }
 
@@ -315,12 +380,19 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
     if (index < 0 || index > maxIndex) return;
     
     widget.controller.jumpToIndex(index);
-    if (_itemScrollController.isAttached) {
-      _itemScrollController.scrollTo(
-        index: index,
-        duration: duration,
-        curve: Curves.easeInOut,
-      );
+    
+    if (_readingMode == ReadingMode.page) {
+      // In page mode, use BookPageView's jumpToParagraph
+      _bookPageKey.currentState?.jumpToParagraph(index);
+    } else {
+      // In scroll mode, use ScrollablePositionedList
+      if (_itemScrollController.isAttached) {
+        _itemScrollController.scrollTo(
+          index: index,
+          duration: duration,
+          curve: Curves.easeInOut,
+        );
+      }
     }
   }
 
@@ -400,6 +472,62 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
           icon: const Icon(Icons.format_size),
           tooltip: 'Font Size',
           onPressed: toggleFontSlider,
+        ),
+        // Reading mode menu
+        PopupMenuButton<ReadingMode>(
+          icon: Icon(
+            _readingMode == ReadingMode.scroll 
+                ? Icons.view_stream 
+                : Icons.auto_stories,
+          ),
+          tooltip: 'Mode de lecture',
+          onSelected: setReadingMode,
+          itemBuilder: (context) => [
+            PopupMenuItem(
+              value: ReadingMode.scroll,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.view_stream,
+                    color: _readingMode == ReadingMode.scroll 
+                        ? theme.accentColor 
+                        : theme.textColor,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Mode défilement',
+                    style: TextStyle(
+                      fontWeight: _readingMode == ReadingMode.scroll 
+                          ? FontWeight.bold 
+                          : FontWeight.normal,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            PopupMenuItem(
+              value: ReadingMode.page,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.auto_stories,
+                    color: _readingMode == ReadingMode.page 
+                        ? theme.accentColor 
+                        : theme.textColor,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Mode page',
+                    style: TextStyle(
+                      fontWeight: _readingMode == ReadingMode.page 
+                          ? FontWeight.bold 
+                          : FontWeight.normal,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
         PopupMenuButton<ReaderTheme>(
           icon: const Icon(Icons.brightness_6),
@@ -601,59 +729,122 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
               ],
             ),
           ),
-        // Content list
+        // Content - either scroll mode or page mode
         Expanded(
-          child: ScrollablePositionedList.builder(
-            itemScrollController: _itemScrollController,
-            itemPositionsListener: _itemPositionsListener,
-            itemCount: paragraphs.length,
-            physics: widget.scrollPhysics ?? const BouncingScrollPhysics(),
-            itemBuilder: (context, index) {
-              final paragraph = paragraphs[index];
-              
-              // Check if this is a chapter start
-              final isChapterStart = _isChapterStart(index, paragraphs);
-              
-              // Skip header if the first paragraph IS the chapter title (h1, h2, h3)
-              final isFirstParagraphAHeading = paragraph.isHeading;
-              final shouldShowHeader = isChapterStart && 
-                  paragraph.chapterTitle != null && 
-                  !isFirstParagraphAHeading;
-              
-              return LayoutBuilder(
-                builder: (context, constraints) {
-                  final contentWidth = constraints.maxWidth * widget.contentWidthPercent;
-                  return Center(
-                    child: SizedBox(
-                      width: contentWidth,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (shouldShowHeader)
-                            _buildChapterHeaderFromTitle(context, paragraph.chapterTitle!, index > 0, theme),
-                          Padding(
-                            padding: widget.padding,
-                            child: widget.paragraphBuilder?.call(context, paragraph, theme, _fontSize) ??
-                                EpubContentRenderer(
-                                  paragraph: paragraph,
-                                  themeData: theme,
-                                  fontSize: _fontSize,
-                                  imageData: widget.controller.imageData,
-                                  onLinkTap: _handleLinkTap,
-                                  imageErrorBuilder: widget.imageErrorBuilder,
-                                  cssParser: widget.controller.cssParser,
-                                ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              );
-            },
-          ),
+          child: _readingMode == ReadingMode.page
+              ? _buildPageModeContent(context, theme, paragraphs)
+              : _buildScrollModeContent(context, theme, paragraphs),
         ),
       ],
+    );
+  }
+
+  Widget _buildPageModeContent(BuildContext context, ReaderThemeData theme, List<ParagraphElement> paragraphs) {
+    // Get the paragraph index to navigate to (for mode sync)
+    final initialParagraphIndex = _pendingParagraphIndex;
+    _pendingParagraphIndex = null; // Clear after use
+    
+    return BookPageView(
+      key: _bookPageKey,
+      paragraphs: paragraphs,
+      themeData: theme,
+      fontSize: _fontSize,
+      imageData: widget.controller.imageData,
+      cssParser: widget.controller.cssParser,
+      contentWidthPercent: widget.contentWidthPercent,
+      initialParagraphIndex: initialParagraphIndex,
+      onPageChanged: (pageIndex, paragraphIndex) {
+        // Update controller position
+        widget.controller.updatePositionFromScroll(paragraphIndex, 0.0);
+        
+        // Notify chapter change if needed
+        if (paragraphIndex < paragraphs.length) {
+          final chapterIndex = paragraphs[paragraphIndex].chapterIndex;
+          if (chapterIndex != _lastReportedChapterIndex) {
+            _lastReportedChapterIndex = chapterIndex;
+            final flatChapters = widget.controller.flatChapters;
+            if (chapterIndex < flatChapters.length) {
+              widget.onChapterChanged?.call(flatChapters[chapterIndex]);
+            }
+          }
+        }
+        
+        // Notify progress change
+        final currentProgress = paragraphIndex / paragraphs.length;
+        if ((currentProgress - _lastReportedProgress).abs() > 0.005) {
+          _lastReportedProgress = currentProgress;
+          widget.onProgressChanged?.call(currentProgress);
+        }
+        
+        // Notify position change
+        final position = widget.controller.currentPosition;
+        if (position != null) {
+          widget.onPositionChanged?.call(position);
+        }
+      },
+    );
+  }
+
+  Widget _buildScrollModeContent(BuildContext context, ReaderThemeData theme, List<ParagraphElement> paragraphs) {
+    return ScrollablePositionedList.builder(
+      itemScrollController: _itemScrollController,
+      itemPositionsListener: _itemPositionsListener,
+      itemCount: paragraphs.length,
+      physics: widget.scrollPhysics ?? const ClampingScrollPhysics(),
+      // Larger cache for smoother scrolling - pre-render more items
+      minCacheExtent: 1500,
+      addAutomaticKeepAlives: true,
+      addRepaintBoundaries: true,
+      itemBuilder: (context, index) {
+        return _buildScrollItem(context, index, paragraphs, theme);
+      },
+    );
+  }
+
+  /// Build a single scroll item with RepaintBoundary for performance
+  Widget _buildScrollItem(BuildContext context, int index, List<ParagraphElement> paragraphs, ReaderThemeData theme) {
+    final paragraph = paragraphs[index];
+    
+    // Check if this is a chapter start
+    final isChapterStart = _isChapterStart(index, paragraphs);
+    
+    // Skip header if the first paragraph IS the chapter title (h1, h2, h3)
+    final isFirstParagraphAHeading = paragraph.isHeading;
+    final shouldShowHeader = isChapterStart && 
+        paragraph.chapterTitle != null && 
+        !isFirstParagraphAHeading;
+    
+    return RepaintBoundary(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final contentWidth = constraints.maxWidth * widget.contentWidthPercent;
+          return Center(
+            child: SizedBox(
+              width: contentWidth,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (shouldShowHeader)
+                    _buildChapterHeaderFromTitle(context, paragraph.chapterTitle!, index > 0, theme),
+                  Padding(
+                    padding: widget.padding,
+                    child: widget.paragraphBuilder?.call(context, paragraph, theme, _fontSize) ??
+                        EpubContentRenderer(
+                          paragraph: paragraph,
+                          themeData: theme,
+                          fontSize: _fontSize,
+                          imageData: widget.controller.imageData,
+                          onLinkTap: _handleLinkTap,
+                          imageErrorBuilder: widget.imageErrorBuilder,
+                          cssParser: widget.controller.cssParser,
+                        ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 

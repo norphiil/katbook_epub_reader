@@ -68,12 +68,12 @@ class ReaderThemeData {
         );
       case ReaderTheme.sepia:
         return const ReaderThemeData(
-          backgroundColor: Color(0xFFF4ECD8),
-          textColor: Color(0xFF5C4B37),
-          accentColor: Color(0xFFB8860B),
-          secondaryTextColor: Color(0xFF8B7355),
-          linkColor: Color(0xFFB8860B),
-          appBarColor: Color(0xFFF4ECD8),
+          backgroundColor: Color(0xFFD4C4A8), // Warmer, darker sepia
+          textColor: Color(0xFF1A1A1A), // Black text for better readability
+          accentColor: Color(0xFF8B5A2B), // Warm brown accent
+          secondaryTextColor: Color(0xFF5C4B37), // Muted brown
+          linkColor: Color(0xFF8B5A2B),
+          appBarColor: Color(0xFFC4B494), // Slightly darker app bar
           displayName: 'Sépia',
         );
       case ReaderTheme.dark:
