@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:epubx/epubx.dart';
+import 'package:epubx_kuebiko/epubx_kuebiko.dart';
 import 'package:flutter/foundation.dart';
 
 import '../models/chapter_node.dart';

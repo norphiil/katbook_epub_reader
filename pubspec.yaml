@@ -12,7 +12,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  epubx: ^4.0.0
+  epubx_kuebiko: ^4.2.1
   html: ^0.15.6
   collection: ^1.19.1
   scrollable_positioned_list: ^0.3.8
