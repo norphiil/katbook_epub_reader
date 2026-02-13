@@ -16,4 +16,4 @@ export 'src/widgets/table_of_contents.dart';
 export 'src/widgets/epub_content_renderer.dart';
 export 'src/widgets/book_page_view.dart';
 
-export 'package:epubx/epubx.dart' show EpubBook, EpubChapter;
+export 'package:epubx_kuebiko/epubx_kuebiko.dart' show EpubBook, EpubChapter;
