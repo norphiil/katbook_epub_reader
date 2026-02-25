@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:katbook_epub_reader/katbook_epub_reader.dart';
 
 import 'homepage.dart';
 
 /// Example of how to use the Katbook EPUB Reader package.
-/// 
+///
 /// This example demonstrates:
 /// - Loading EPUB from network URL
 /// - Loading EPUB from assets
 /// - Full reader with all callbacks
 /// - Position tracking and restoration
+/// - Internationalization (i18n) support
 void main() {
   runApp(const MyApp());
 }
@@ -26,6 +28,10 @@ class MyApp extends StatelessWidget {
       ),
       darkTheme: ThemeData.dark(useMaterial3: true),
       themeMode: ThemeMode.dark,
+      // Internationalization support
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: const Locale('en'), // Default to English, change to Locale('zh') for Chinese
       // Wrap with FocusScope to prevent focus-related errors on web
       builder: (context, child) {
         return FocusScope(
