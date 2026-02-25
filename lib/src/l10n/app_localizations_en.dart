@@ -57,4 +57,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get fontSizeIncrease => 'Increase font size';
+
+  @override
+  String get tooltipLanguage => 'Language';
+
+  @override
+  String get languageEnglish => 'English';
+
+  @override
+  String get languageChinese => 'Chinese';
+
+  @override
+  String getLocaleDisplayName(String languageCode) {
+    switch (languageCode) {
+      case 'en':
+        return 'English';
+      case 'zh':
+        return 'Chinese';
+      default:
+        return languageCode;
+    }
+  }
 }

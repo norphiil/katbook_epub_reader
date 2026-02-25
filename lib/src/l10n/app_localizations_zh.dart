@@ -57,4 +57,25 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get fontSizeIncrease => '增大字体';
+
+  @override
+  String get tooltipLanguage => '语言';
+
+  @override
+  String get languageEnglish => '英文';
+
+  @override
+  String get languageChinese => '中文';
+
+  @override
+  String getLocaleDisplayName(String languageCode) {
+    switch (languageCode) {
+      case 'en':
+        return '英文';
+      case 'zh':
+        return '中文';
+      default:
+        return languageCode;
+    }
+  }
 }

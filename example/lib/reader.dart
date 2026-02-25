@@ -56,6 +56,15 @@ class EpubReaderScreen extends StatefulWidget {
   /// Callback quand le chapitre change
   final void Function(ChapterNode chapter)? onChapterChanged;
 
+  /// Locale initiale du reader
+  final Locale? locale;
+
+  /// Callback quand la langue change
+  final void Function(Locale locale)? onLocaleChanged;
+
+  /// Afficher le bouton de sélection de langue
+  final bool showLanguageButton;
+
   const EpubReaderScreen({
     super.key,
     this.epubBytes,
@@ -69,6 +78,9 @@ class EpubReaderScreen extends StatefulWidget {
     this.onPositionChanged,
     this.onProgressChanged,
     this.onChapterChanged,
+    this.locale,
+    this.onLocaleChanged,
+    this.showLanguageButton = true,
   }) : assert(
          epubBytes != null || url != null || assetPath != null,
          'At least one of epubBytes, url, or assetPath must be provided',
@@ -239,15 +251,19 @@ class EpubReaderScreenState extends State<EpubReaderScreen> {
     return KatbookEpubReader(
       key: _readerKey,
       controller: _controller,
-      
+
       // Theme and font settings
       initialTheme: widget.initialTheme,
       initialFontSize: widget.initialFontSize,
-      
+
       // Layout settings
       contentWidthPercent: widget.contentWidthPercent,
       showAppBar: widget.showAppBar,
-      
+
+      // Language settings
+      locale: widget.locale,
+      showLanguageButton: widget.showLanguageButton,
+
       // Callbacks for tracking
       onPositionChanged: widget.onPositionChanged ?? (position) {
         debugPrint(
@@ -261,6 +277,9 @@ class EpubReaderScreenState extends State<EpubReaderScreen> {
       },
       onChapterChanged: widget.onChapterChanged ?? (chapter) {
         debugPrint('📑 Chapter: ${chapter.title} (Depth: ${chapter.depth})');
+      },
+      onLocaleChanged: widget.onLocaleChanged ?? (locale) {
+        debugPrint('🌐 Language changed to: ${locale.languageCode}');
       },
     );
   }

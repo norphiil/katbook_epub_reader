@@ -87,6 +87,18 @@ abstract class AppLocalizations {
 
   /// Label for font size increase button
   String get fontSizeIncrease;
+
+  /// Tooltip for the language button
+  String get tooltipLanguage;
+
+  /// Label for English language
+  String get languageEnglish;
+
+  /// Label for Chinese language
+  String get languageChinese;
+
+  /// Get the display name for a locale
+  String getLocaleDisplayName(String languageCode);
 }
 
 class _AppLocalizationsDelegate

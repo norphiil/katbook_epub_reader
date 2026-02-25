@@ -39,6 +39,9 @@ class KatbookEpubReader extends StatefulWidget {
     this.scrollPhysics,
     this.initialPosition,
     this.contentWidthPercent = 0.65,
+    this.locale,
+    this.onLocaleChanged,
+    this.showLanguageButton = true,
   });
 
   /// The controller that manages the EPUB book.
@@ -102,6 +105,15 @@ class KatbookEpubReader extends StatefulWidget {
   /// Content will be centered. Defaults to 0.65 (65% of screen width).
   final double contentWidthPercent;
 
+  /// The locale to use for localization. If null, uses the system locale.
+  final Locale? locale;
+
+  /// Called when the locale changes.
+  final void Function(Locale locale)? onLocaleChanged;
+
+  /// Whether to show the language selector button in the app bar.
+  final bool showLanguageButton;
+
   @override
   State<KatbookEpubReader> createState() => KatbookEpubReaderState();
 }
@@ -111,9 +123,10 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
   late ReaderTheme _currentTheme;
   late double _fontSize;
   late ReadingMode _readingMode;
+  late Locale? _currentLocale;
   bool _tocVisible = false;
   bool _showFontSlider = false;
-  
+
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final GlobalKey<BookPageViewState> _bookPageKey = GlobalKey<BookPageViewState>();
   final ItemScrollController _itemScrollController = ItemScrollController();
@@ -132,6 +145,9 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
 
   /// Gets the current reading mode.
   ReadingMode get readingMode => _readingMode;
+
+  /// Gets the current locale.
+  Locale? get currentLocale => _currentLocale;
 
   /// Gets the current theme data.
   ReaderThemeData get themeData => ReaderThemeData.fromTheme(_currentTheme);
@@ -154,6 +170,7 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
     _currentTheme = widget.initialTheme;
     _fontSize = widget.initialFontSize;
     _readingMode = widget.initialReadingMode;
+    _currentLocale = widget.locale;
 
     widget.controller.addListener(_onControllerChanged);
     _itemPositionsListener.itemPositions.addListener(_onScrollPositionChanged);
@@ -292,6 +309,25 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
     );
   }
 
+  /// Changes the current locale.
+  void setLocale(Locale locale) {
+    if (_currentLocale == locale) return;
+    setState(() {
+      _currentLocale = locale;
+    });
+    widget.onLocaleChanged?.call(locale);
+  }
+
+  /// Cycles through the available locales.
+  void cycleLocale() {
+    final locales = AppLocalizations.supportedLocales;
+    final currentIndex = _currentLocale != null
+        ? locales.indexWhere((l) => l.languageCode == _currentLocale!.languageCode)
+        : -1;
+    final nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % locales.length;
+    setLocale(locales[nextIndex]);
+  }
+
   /// Changes the font size.
   void setFontSize(double size) {
     if (size < 8.0 || size > 40.0) return;
@@ -406,7 +442,7 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
   Widget build(BuildContext context) {
     final theme = ReaderThemeData.fromTheme(_currentTheme);
 
-    return Theme(
+    Widget content = Theme(
       data: ThemeData(
         brightness: theme.isDark ? Brightness.dark : Brightness.light,
         scaffoldBackgroundColor: theme.backgroundColor,
@@ -430,6 +466,17 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
         body: _buildBody(context, theme),
       ),
     );
+
+    // Wrap with Localizations if a specific locale is set
+    if (_currentLocale != null) {
+      content = Localizations.override(
+        context: context,
+        locale: _currentLocale,
+        child: content,
+      );
+    }
+
+    return content;
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context, ReaderThemeData theme) {
@@ -569,6 +616,45 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
             ),
           ],
         ),
+        // Language selector
+        if (widget.showLanguageButton)
+          PopupMenuButton<Locale>(
+            icon: const Icon(Icons.language),
+            tooltip: l10n?.tooltipLanguage,
+            onSelected: setLocale,
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: const Locale('en'),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.check,
+                      color: _currentLocale?.languageCode == 'en'
+                          ? theme.accentColor
+                          : Colors.transparent,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(l10n?.languageEnglish ?? 'English'),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: const Locale('zh'),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.check,
+                      color: _currentLocale?.languageCode == 'zh'
+                          ? theme.accentColor
+                          : Colors.transparent,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(l10n?.languageChinese ?? 'Chinese'),
+                  ],
+                ),
+              ),
+            ],
+          ),
       ],
     );
   }
