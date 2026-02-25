@@ -28,7 +28,9 @@ class MyApp extends StatelessWidget {
       ),
       darkTheme: ThemeData.dark(useMaterial3: true),
       themeMode: ThemeMode.dark,
-      // Internationalization support
+      // IMPORTANT: Internationalization support is REQUIRED for proper tooltip display.
+      // Without these delegates, all tooltips will show as "Menu" instead of localized text.
+      // When using KatbookEpubReader in your own app, you MUST add these two lines:
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       locale: const Locale('fr'), // Default to French (original project language), change to Locale('en') for English or Locale('zh') for Chinese
