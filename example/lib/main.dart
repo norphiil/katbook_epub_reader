@@ -31,7 +31,7 @@ class MyApp extends StatelessWidget {
       // Internationalization support
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      locale: const Locale('en'), // Default to English, change to Locale('zh') for Chinese
+      locale: const Locale('fr'), // Default to French (original project language), change to Locale('en') for English or Locale('zh') for Chinese
       // Wrap with FocusScope to prevent focus-related errors on web
       builder: (context, child) {
         return FocusScope(

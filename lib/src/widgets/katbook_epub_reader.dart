@@ -628,13 +628,26 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
                 child: Row(
                   children: [
                     Icon(
-                      Icons.check,
+                      _currentLocale?.languageCode == 'en'
+                          ? Icons.check
+                          : Icons.language,
+                      size: 20,
                       color: _currentLocale?.languageCode == 'en'
                           ? theme.accentColor
-                          : Colors.transparent,
+                          : theme.textColor,
                     ),
                     const SizedBox(width: 8),
-                    Text(l10n?.languageEnglish ?? 'English'),
+                    Text(
+                      'English',
+                      style: TextStyle(
+                        fontWeight: _currentLocale?.languageCode == 'en'
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: _currentLocale?.languageCode == 'en'
+                            ? theme.accentColor
+                            : theme.textColor,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -643,13 +656,54 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
                 child: Row(
                   children: [
                     Icon(
-                      Icons.check,
+                      _currentLocale?.languageCode == 'zh'
+                          ? Icons.check
+                          : Icons.language,
+                      size: 20,
                       color: _currentLocale?.languageCode == 'zh'
                           ? theme.accentColor
-                          : Colors.transparent,
+                          : theme.textColor,
                     ),
                     const SizedBox(width: 8),
-                    Text(l10n?.languageChinese ?? 'Chinese'),
+                    Text(
+                      '中文',
+                      style: TextStyle(
+                        fontWeight: _currentLocale?.languageCode == 'zh'
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: _currentLocale?.languageCode == 'zh'
+                            ? theme.accentColor
+                            : theme.textColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: const Locale('fr'),
+                child: Row(
+                  children: [
+                    Icon(
+                      _currentLocale?.languageCode == 'fr'
+                          ? Icons.check
+                          : Icons.language,
+                      size: 20,
+                      color: _currentLocale?.languageCode == 'fr'
+                          ? theme.accentColor
+                          : theme.textColor,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Français',
+                      style: TextStyle(
+                        fontWeight: _currentLocale?.languageCode == 'fr'
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: _currentLocale?.languageCode == 'fr'
+                            ? theme.accentColor
+                            : theme.textColor,
+                      ),
+                    ),
                   ],
                 ),
               ),

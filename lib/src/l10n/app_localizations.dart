@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'app_localizations_en.dart';
+import 'app_localizations_fr.dart';
 import 'app_localizations_zh.dart';
 
 /// Callers can lookup localized strings with an instance of AppLocalizations
@@ -32,6 +33,7 @@ abstract class AppLocalizations {
   static const List<Locale> supportedLocales = <Locale>[
     Locale('en'),
     Locale('zh'),
+    Locale('fr'),
   ];
 
   /// The title of the app bar when no book title is available
@@ -113,7 +115,7 @@ class _AppLocalizationsDelegate
 
   @override
   bool isSupported(Locale locale) =>
-      <String>['en', 'zh'].contains(locale.languageCode);
+      <String>['en', 'zh', 'fr'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;
@@ -125,6 +127,8 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
       return AppLocalizationsEn();
     case 'zh':
       return AppLocalizationsZh();
+    case 'fr':
+      return AppLocalizationsFr();
   }
 
   throw FlutterError(
