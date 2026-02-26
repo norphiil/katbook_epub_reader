@@ -42,6 +42,7 @@ class KatbookEpubReader extends StatefulWidget {
     this.locale,
     this.onLocaleChanged,
     this.showLanguageButton = true,
+    this.showThemeButton = true,
   });
 
   /// The controller that manages the EPUB book.
@@ -113,6 +114,9 @@ class KatbookEpubReader extends StatefulWidget {
 
   /// Whether to show the language selector button in the app bar.
   final bool showLanguageButton;
+
+  /// Whether to show the theme selector button in the app bar.
+  final bool showThemeButton;
 
   @override
   State<KatbookEpubReader> createState() => KatbookEpubReaderState();
@@ -579,43 +583,45 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
             ),
           ],
         ),
-        PopupMenuButton<ReaderTheme>(
-          icon: const Icon(Icons.brightness_6),
-          tooltip: l10n?.tooltipTheme,
-          onSelected: setTheme,
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              value: ReaderTheme.light,
-              child: Row(
-                children: [
-                  const Icon(Icons.wb_sunny, color: Colors.orange),
-                  const SizedBox(width: 8),
-                  Text(l10n?.themeLight ?? 'Light'),
-                ],
+        // Theme selector
+        if (widget.showThemeButton)
+          PopupMenuButton<ReaderTheme>(
+            icon: const Icon(Icons.brightness_6),
+            tooltip: l10n?.tooltipTheme,
+            onSelected: setTheme,
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: ReaderTheme.light,
+                child: Row(
+                  children: [
+                    const Icon(Icons.wb_sunny, color: Colors.orange),
+                    const SizedBox(width: 8),
+                    Text(l10n?.themeLight ?? 'Light'),
+                  ],
+                ),
               ),
-            ),
-            PopupMenuItem(
-              value: ReaderTheme.sepia,
-              child: Row(
-                children: [
-                  const Icon(Icons.brightness_5, color: Colors.brown),
-                  const SizedBox(width: 8),
-                  Text(l10n?.themeSepia ?? 'Sepia'),
-                ],
+              PopupMenuItem(
+                value: ReaderTheme.sepia,
+                child: Row(
+                  children: [
+                    const Icon(Icons.brightness_5, color: Colors.brown),
+                    const SizedBox(width: 8),
+                    Text(l10n?.themeSepia ?? 'Sepia'),
+                  ],
+                ),
               ),
-            ),
-            PopupMenuItem(
-              value: ReaderTheme.dark,
-              child: Row(
-                children: [
-                  const Icon(Icons.nights_stay, color: Colors.blueGrey),
-                  const SizedBox(width: 8),
-                  Text(l10n?.themeDark ?? 'Dark'),
-                ],
+              PopupMenuItem(
+                value: ReaderTheme.dark,
+                child: Row(
+                  children: [
+                    const Icon(Icons.nights_stay, color: Colors.blueGrey),
+                    const SizedBox(width: 8),
+                    Text(l10n?.themeDark ?? 'Dark'),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
         // Language selector
         if (widget.showLanguageButton)
           PopupMenuButton<Locale>(

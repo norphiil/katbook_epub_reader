@@ -65,6 +65,9 @@ class EpubReaderScreen extends StatefulWidget {
   /// Afficher le bouton de sélection de langue
   final bool showLanguageButton;
 
+  /// Afficher le bouton de sélection de thème
+  final bool showThemeButton;
+
   const EpubReaderScreen({
     super.key,
     this.epubBytes,
@@ -81,6 +84,7 @@ class EpubReaderScreen extends StatefulWidget {
     this.locale,
     this.onLocaleChanged,
     this.showLanguageButton = true,
+    this.showThemeButton = true,
   }) : assert(
          epubBytes != null || url != null || assetPath != null,
          'At least one of epubBytes, url, or assetPath must be provided',
@@ -263,6 +267,7 @@ class EpubReaderScreenState extends State<EpubReaderScreen> {
       // Language settings
       locale: widget.locale,
       showLanguageButton: widget.showLanguageButton,
+      showThemeButton: widget.showThemeButton,
 
       // Callbacks for tracking
       onPositionChanged: widget.onPositionChanged ?? (position) {
