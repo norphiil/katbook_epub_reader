@@ -12,6 +12,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  intl: 0.20.2
   epubx: ^4.0.0
   html: ^0.15.6
   collection: ^1.19.1
