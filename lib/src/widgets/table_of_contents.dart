@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 
+import '../l10n/app_localizations.dart';
 import '../models/chapter_node.dart';
 import '../models/reader_theme.dart';
 
@@ -42,6 +43,8 @@ class TableOfContentsWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Column(
       children: [
         // Header with book info
@@ -89,30 +92,30 @@ class TableOfContentsWidget extends StatelessWidget {
         Expanded(
           child: ListView(
             padding: const EdgeInsets.symmetric(vertical: 8.0),
-            children: _buildChaptersList(chapters),
+            children: _buildChaptersList(chapters, l10n),
           ),
         ),
       ],
     );
   }
 
-  List<Widget> _buildChaptersList(List<ChapterNode> chapters, {int depth = 0}) {
+  List<Widget> _buildChaptersList(List<ChapterNode> chapters, AppLocalizations? l10n, {int depth = 0}) {
     final widgets = <Widget>[];
 
     for (final chapter in chapters) {
       widgets.add(
-        _buildChapterTile(chapter, depth),
+        _buildChapterTile(chapter, depth, l10n),
       );
 
       if (chapter.children.isNotEmpty) {
-        widgets.addAll(_buildChaptersList(chapter.children, depth: depth + 1));
+        widgets.addAll(_buildChaptersList(chapter.children, l10n, depth: depth + 1));
       }
     }
 
     return widgets;
   }
 
-  Widget _buildChapterTile(ChapterNode chapter, int depth) {
+  Widget _buildChapterTile(ChapterNode chapter, int depth, AppLocalizations? l10n) {
     // A chapter is current if the current paragraph is at or after its start index
     // but before the next chapter's start index
     final isCurrentChapter = _isChapterActive(chapter);
@@ -150,7 +153,7 @@ class TableOfContentsWidget extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 4.0),
                   child: Text(
-                    '${chapter.children.length} sections',
+                    '${chapter.children.length} ${l10n?.sectionsCount ?? 'sections'}',
                     style: TextStyle(
                       color: themeData.secondaryTextColor,
                       fontSize: 12,
