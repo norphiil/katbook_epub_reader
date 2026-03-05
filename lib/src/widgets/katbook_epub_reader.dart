@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../controller/katbook_epub_controller.dart';
+import '../l10n/app_localizations.dart';
 import '../models/chapter_node.dart';
 import '../models/paragraph_element.dart';
 import '../models/reader_theme.dart';
@@ -38,6 +39,10 @@ class KatbookEpubReader extends StatefulWidget {
     this.scrollPhysics,
     this.initialPosition,
     this.contentWidthPercent = 0.65,
+    this.locale,
+    this.onLocaleChanged,
+    this.showLanguageButton = true,
+    this.showThemeButton = true,
   });
 
   /// The controller that manages the EPUB book.
@@ -101,6 +106,18 @@ class KatbookEpubReader extends StatefulWidget {
   /// Content will be centered. Defaults to 0.65 (65% of screen width).
   final double contentWidthPercent;
 
+  /// The locale to use for localization. If null, uses the system locale.
+  final Locale? locale;
+
+  /// Called when the locale changes.
+  final void Function(Locale locale)? onLocaleChanged;
+
+  /// Whether to show the language selector button in the app bar.
+  final bool showLanguageButton;
+
+  /// Whether to show the theme selector button in the app bar.
+  final bool showThemeButton;
+
   @override
   State<KatbookEpubReader> createState() => KatbookEpubReaderState();
 }
@@ -110,9 +127,10 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
   late ReaderTheme _currentTheme;
   late double _fontSize;
   late ReadingMode _readingMode;
+  late Locale? _currentLocale;
   bool _tocVisible = false;
   bool _showFontSlider = false;
-  
+
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final GlobalKey<BookPageViewState> _bookPageKey = GlobalKey<BookPageViewState>();
   final ItemScrollController _itemScrollController = ItemScrollController();
@@ -131,6 +149,9 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
 
   /// Gets the current reading mode.
   ReadingMode get readingMode => _readingMode;
+
+  /// Gets the current locale.
+  Locale? get currentLocale => _currentLocale;
 
   /// Gets the current theme data.
   ReaderThemeData get themeData => ReaderThemeData.fromTheme(_currentTheme);
@@ -153,6 +174,7 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
     _currentTheme = widget.initialTheme;
     _fontSize = widget.initialFontSize;
     _readingMode = widget.initialReadingMode;
+    _currentLocale = widget.locale;
 
     widget.controller.addListener(_onControllerChanged);
     _itemPositionsListener.itemPositions.addListener(_onScrollPositionChanged);
@@ -291,6 +313,25 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
     );
   }
 
+  /// Changes the current locale.
+  void setLocale(Locale locale) {
+    if (_currentLocale == locale) return;
+    setState(() {
+      _currentLocale = locale;
+    });
+    widget.onLocaleChanged?.call(locale);
+  }
+
+  /// Cycles through the available locales.
+  void cycleLocale() {
+    final locales = AppLocalizations.supportedLocales;
+    final currentIndex = _currentLocale != null
+        ? locales.indexWhere((l) => l.languageCode == _currentLocale!.languageCode)
+        : -1;
+    final nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % locales.length;
+    setLocale(locales[nextIndex]);
+  }
+
   /// Changes the font size.
   void setFontSize(double size) {
     if (size < 8.0 || size > 40.0) return;
@@ -405,7 +446,7 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
   Widget build(BuildContext context) {
     final theme = ReaderThemeData.fromTheme(_currentTheme);
 
-    return Theme(
+    Widget content = Theme(
       data: ThemeData(
         brightness: theme.isDark ? Brightness.dark : Brightness.light,
         scaffoldBackgroundColor: theme.backgroundColor,
@@ -429,15 +470,28 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
         body: _buildBody(context, theme),
       ),
     );
+
+    // Wrap with Localizations if a specific locale is set
+    if (_currentLocale != null) {
+      content = Localizations.override(
+        context: context,
+        locale: _currentLocale,
+        child: content,
+      );
+    }
+
+    return content;
   }
 
   PreferredSizeWidget _buildAppBar(BuildContext context, ReaderThemeData theme) {
-    final title = widget.controller.title ?? 'EPUB Reader';
+    final l10n = AppLocalizations.of(context);
+    final title = widget.controller.title ?? l10n?.appBarTitleDefault ?? 'EPUB Reader';
     final progressPercent = (progress * 100).toStringAsFixed(1);
 
     return AppBar(
       leading: IconButton(
         icon: const Icon(Icons.arrow_back),
+        tooltip: l10n?.tooltipBack,
         onPressed: () => Navigator.of(context).pop(),
       ),
       title: Column(
@@ -465,12 +519,12 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
       actions: [
         IconButton(
           icon: const Icon(Icons.menu_book),
-          tooltip: 'Table of Contents',
+          tooltip: l10n?.tooltipTableOfContents,
           onPressed: () => _scaffoldKey.currentState?.openDrawer(),
         ),
         IconButton(
           icon: const Icon(Icons.format_size),
-          tooltip: 'Font Size',
+          tooltip: l10n?.tooltipFontSize,
           onPressed: toggleFontSlider,
         ),
         // Reading mode menu
@@ -480,7 +534,7 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
                 ? Icons.view_stream 
                 : Icons.auto_stories,
           ),
-          tooltip: 'Mode de lecture',
+          tooltip: l10n?.tooltipReadingMode,
           onSelected: setReadingMode,
           itemBuilder: (context) => [
             PopupMenuItem(
@@ -495,7 +549,7 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Mode défilement',
+                    l10n?.readingModeScroll ?? 'Scroll Mode',
                     style: TextStyle(
                       fontWeight: _readingMode == ReadingMode.scroll 
                           ? FontWeight.bold 
@@ -517,7 +571,7 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Mode page',
+                    l10n?.readingModePage ?? 'Page Mode',
                     style: TextStyle(
                       fontWeight: _readingMode == ReadingMode.page 
                           ? FontWeight.bold 
@@ -529,43 +583,138 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
             ),
           ],
         ),
-        PopupMenuButton<ReaderTheme>(
-          icon: const Icon(Icons.brightness_6),
-          tooltip: 'Theme',
-          onSelected: setTheme,
-          itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: ReaderTheme.light,
-              child: Row(
-                children: [
-                  Icon(Icons.wb_sunny, color: Colors.orange),
-                  SizedBox(width: 8),
-                  Text('Light'),
-                ],
+        // Theme selector
+        if (widget.showThemeButton)
+          PopupMenuButton<ReaderTheme>(
+            icon: const Icon(Icons.brightness_6),
+            tooltip: l10n?.tooltipTheme,
+            onSelected: setTheme,
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: ReaderTheme.light,
+                child: Row(
+                  children: [
+                    const Icon(Icons.wb_sunny, color: Colors.orange),
+                    const SizedBox(width: 8),
+                    Text(l10n?.themeLight ?? 'Light'),
+                  ],
+                ),
               ),
-            ),
-            const PopupMenuItem(
-              value: ReaderTheme.sepia,
-              child: Row(
-                children: [
-                  Icon(Icons.brightness_5, color: Colors.brown),
-                  SizedBox(width: 8),
-                  Text('Sepia'),
-                ],
+              PopupMenuItem(
+                value: ReaderTheme.sepia,
+                child: Row(
+                  children: [
+                    const Icon(Icons.brightness_5, color: Colors.brown),
+                    const SizedBox(width: 8),
+                    Text(l10n?.themeSepia ?? 'Sepia'),
+                  ],
+                ),
               ),
-            ),
-            const PopupMenuItem(
-              value: ReaderTheme.dark,
-              child: Row(
-                children: [
-                  Icon(Icons.nights_stay, color: Colors.blueGrey),
-                  SizedBox(width: 8),
-                  Text('Dark'),
-                ],
+              PopupMenuItem(
+                value: ReaderTheme.dark,
+                child: Row(
+                  children: [
+                    const Icon(Icons.nights_stay, color: Colors.blueGrey),
+                    const SizedBox(width: 8),
+                    Text(l10n?.themeDark ?? 'Dark'),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
+        // Language selector
+        if (widget.showLanguageButton)
+          PopupMenuButton<Locale>(
+            icon: const Icon(Icons.language),
+            tooltip: l10n?.tooltipLanguage,
+            onSelected: setLocale,
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: const Locale('en'),
+                child: Row(
+                  children: [
+                    Icon(
+                      _currentLocale?.languageCode == 'en'
+                          ? Icons.check
+                          : Icons.language,
+                      size: 20,
+                      color: _currentLocale?.languageCode == 'en'
+                          ? theme.accentColor
+                          : theme.textColor,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'English',
+                      style: TextStyle(
+                        fontWeight: _currentLocale?.languageCode == 'en'
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: _currentLocale?.languageCode == 'en'
+                            ? theme.accentColor
+                            : theme.textColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: const Locale('zh'),
+                child: Row(
+                  children: [
+                    Icon(
+                      _currentLocale?.languageCode == 'zh'
+                          ? Icons.check
+                          : Icons.language,
+                      size: 20,
+                      color: _currentLocale?.languageCode == 'zh'
+                          ? theme.accentColor
+                          : theme.textColor,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '中文',
+                      style: TextStyle(
+                        fontWeight: _currentLocale?.languageCode == 'zh'
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: _currentLocale?.languageCode == 'zh'
+                            ? theme.accentColor
+                            : theme.textColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: const Locale('fr'),
+                child: Row(
+                  children: [
+                    Icon(
+                      _currentLocale?.languageCode == 'fr'
+                          ? Icons.check
+                          : Icons.language,
+                      size: 20,
+                      color: _currentLocale?.languageCode == 'fr'
+                          ? theme.accentColor
+                          : theme.textColor,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Français',
+                      style: TextStyle(
+                        fontWeight: _currentLocale?.languageCode == 'fr'
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: _currentLocale?.languageCode == 'fr'
+                            ? theme.accentColor
+                            : theme.textColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
       ],
     );
   }
@@ -603,6 +752,8 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
   }
 
   Widget _buildBody(BuildContext context, ReaderThemeData theme) {
+    final l10n = AppLocalizations.of(context);
+
     // Loading state
     if (!widget.controller.isLoaded) {
       return widget.loadingBuilder?.call(context) ??
@@ -615,7 +766,7 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Loading book...',
+                  l10n?.loadingBook ?? 'Loading book...',
                   style: TextStyle(
                     color: theme.textColor,
                     fontSize: 16,
@@ -643,7 +794,7 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Error loading book',
+                    l10n?.errorLoadingTitle ?? 'Error loading book',
                     style: TextStyle(
                       color: theme.textColor,
                       fontSize: 18,
@@ -669,7 +820,7 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
     if (!widget.controller.isLoaded) {
       return Center(
         child: Text(
-          'No book loaded',
+          l10n?.noBookLoaded ?? 'No book loaded',
           style: TextStyle(
             color: theme.textColor,
             fontSize: 16,
@@ -683,7 +834,7 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
     if (paragraphs.isEmpty) {
       return Center(
         child: Text(
-          'Book has no content',
+          l10n?.bookEmpty ?? 'Book has no content',
           style: TextStyle(
             color: theme.textColor,
             fontSize: 16,
