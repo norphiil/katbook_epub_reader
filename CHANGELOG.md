@@ -2,6 +2,47 @@
 
 All notable changes to the Katbook EPUB Reader package will be documented in this file.
 
+## [2.1.0] - 2026-03-05
+
+### Features
+
+#### Localization System
+- **Full Internationalization Support**: Complete i18n system with 3 languages (English, French, Chinese)
+- **Language Selector**: Built-in language menu in reader with instant switching
+- **Comprehensive Translations**: All 24 UI strings translated and working across entire app
+- **Dynamic Locale Management**: Language changes propagate throughout entire application
+- **Unified Language Display Names**: Centralized localization display names using single static map in base `AppLocalizations` class
+- **Page Indicator Translation**: Added `pageLabel` translation key for page view indicator, supporting English, French, and Chinese
+- **Enhanced Localization Support**: Better language name handling with native language display (English, 中文, Français)
+
+#### EPUB Asset Selection
+- **Dynamic EPUB Loading**: Read EPUB files from `assets/` folder via AssetManifest
+- **EPUB Picker Dialog**: User-friendly selection dialog for multiple EPUBs
+- **Auto-Discovery**: Automatic detection of .epub files in assets folder
+
+#### CSS & Styling Improvements
+- **Full CSS Support**: Parse and apply EPUB stylesheets (colors, fonts, alignment)
+- **Background Colors**: Detect and apply CSS background colors with proper contrast
+- **Font Styling**: Support for bold (font-weight) and italic (font-style) from CSS
+- **Removed Forced Indentation**: Eliminated artificial paragraph indentation, respecting EPUB's original styling
+
+#### Build Fixes
+- **setState Error Fix**: Resolved "setState during build" error in page viewing mode
+- **Font Size Changes**: Smooth font size adjustments without build conflicts
+
+### Changes
+
+#### Localization System
+- Removed redundant `languageEnglish`, `languageChinese`, and `languageFrench` getters from all language implementations
+- Consolidated language display logic to `getLocaleDisplayName()` method in base class
+- Added `pageLabel` translation for "Page" keyword used in page view
+- Simplified language selector menu to use unified display names
+
+#### Code Quality
+- Improved consistency across localization implementations
+- Reduced code duplication in language files
+- Better separation of concerns for translation keys
+
 ## [1.0.0] - 2025-12-01
 
 ### Features

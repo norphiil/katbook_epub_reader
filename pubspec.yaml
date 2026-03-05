@@ -15,7 +15,7 @@ dependencies:
 
   flutter_localizations:
     sdk: flutter
-  intl: 0.20.2
+  intl: ^0.20.2
   epubx_kuebiko: ^4.2.1
   html: ^0.15.6
   collection: ^1.19.1
