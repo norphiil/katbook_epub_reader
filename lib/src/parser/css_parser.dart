@@ -1,4 +1,4 @@
-import 'package:epubx/epubx.dart';
+import 'package:epubx_kuebiko/epubx_kuebiko.dart';
 import 'package:flutter/foundation.dart';
 
 /// Parses CSS from EPUB files and provides style lookup.
