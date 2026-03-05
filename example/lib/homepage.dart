@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'reader.dart';
 
@@ -41,12 +44,9 @@ class HomePage extends StatelessWidget {
 
               // Load from assets button
               ElevatedButton.icon(
-                onPressed: () => _openReader(
-                  context,
-                  assetPath: 'assets/example.epub',
-                ),
+                onPressed: () => _selectAndOpenEpub(context),
                 icon: const Icon(Icons.menu_book),
-                label: const Text('Load example Epub (from assets)'),
+                label: const Text('Select epub from assets'),
               ),
               const SizedBox(height: 12),
 
@@ -71,6 +71,95 @@ class HomePage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  /// List all EPUB files available in the assets folder
+  Future<List<String>> _getEpubAssets() async {
+    try {
+      final manifestJson = await rootBundle.loadString('AssetManifest.json');
+      final manifest = jsonDecode(manifestJson) as Map<String, dynamic>;
+      final epubFiles = <String>[];
+
+      debugPrint('📄 AssetManifest keys count: ${manifest.keys.length}');
+
+      for (final key in manifest.keys) {
+        if (key.startsWith('assets/') && key.endsWith('.epub')) {
+          final filename = key.split('/').last;
+          epubFiles.add(filename);
+          debugPrint('✅ Found EPUB: $filename (path: $key)');
+        }
+      }
+
+      debugPrint('📚 Total EPUBs found: ${epubFiles.length}');
+      return epubFiles;
+    } catch (e) {
+      debugPrint('❌ Error reading AssetManifest: $e');
+      return [];
+    }
+  }
+
+  /// Show dialog to select and open an EPUB from assets
+  Future<void> _selectAndOpenEpub(BuildContext context) async {
+    final epubFiles = await _getEpubAssets();
+
+    if (!context.mounted) return;
+
+    if (epubFiles.isEmpty) {
+      if (!context.mounted) return;
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('No EPUB files found'),
+          content: const Text(
+            'No EPUB files found in the assets folder.\n\n'
+            '1. Add .epub files to the example/assets/ directory\n'
+            '2. Run: flutter pub get\n'
+            '3. Try again'
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    final selected = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select EPUB'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: epubFiles
+                .map(
+                  (file) => ListTile(
+                    title: Text(file),
+                    leading: const Icon(Icons.book),
+                    onTap: () => Navigator.pop(context, file),
+                  ),
+                )
+                .toList(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+
+    if (selected != null && context.mounted) {
+      _openReader(
+        context,
+        assetPath: 'assets/$selected',
+      );
+    }
   }
 
   void _openReader(
