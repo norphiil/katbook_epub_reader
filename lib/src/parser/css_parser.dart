@@ -1,3 +1,5 @@
+import 'dart:ui' show Color;
+
 import 'package:epubx_kuebiko/epubx_kuebiko.dart';
 import 'package:flutter/foundation.dart';
 
@@ -140,5 +142,66 @@ class EpubCssParser {
            fontWeight.contains('700') ||
            fontWeight.contains('800') ||
            fontWeight.contains('900');
+  }
+
+  /// Parse a CSS color string to a Flutter Color.
+  static Color? parseColor(String? colorStr) {
+    if (colorStr == null || colorStr.isEmpty) return null;
+    final c = colorStr.trim().toLowerCase();
+
+    if (c.startsWith('#')) {
+      final hex = c.substring(1);
+      if (hex.length == 3) {
+        final r = int.parse('${hex[0]}${hex[0]}', radix: 16);
+        final g = int.parse('${hex[1]}${hex[1]}', radix: 16);
+        final b = int.parse('${hex[2]}${hex[2]}', radix: 16);
+        return Color.fromARGB(255, r, g, b);
+      }
+      if (hex.length == 6) {
+        final value = int.tryParse(hex, radix: 16);
+        if (value != null) {
+          return Color.fromARGB(
+            255,
+            (value >> 16) & 0xFF,
+            (value >> 8) & 0xFF,
+            value & 0xFF,
+          );
+        }
+      }
+    }
+
+    if (c.startsWith('rgb')) {
+      final match = RegExp(r'rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)').firstMatch(c);
+      if (match != null) {
+        return Color.fromARGB(
+          255,
+          int.parse(match.group(1)!),
+          int.parse(match.group(2)!),
+          int.parse(match.group(3)!),
+        );
+      }
+    }
+
+    const namedColors = <String, List<int>>{
+      'white': [255, 255, 255],
+      'black': [0, 0, 0],
+      'red': [255, 0, 0],
+      'green': [0, 128, 0],
+      'blue': [0, 0, 255],
+      'gray': [128, 128, 128],
+      'grey': [128, 128, 128],
+    };
+
+    final named = namedColors[c];
+    if (named != null) {
+      return Color.fromARGB(255, named[0], named[1], named[2]);
+    }
+
+    return null;
+  }
+
+  /// Check if a color is very light (default background-like, e.g. white).
+  static bool isDefaultLightBackground(Color color) {
+    return color.computeLuminance() > 0.85;
   }
 }

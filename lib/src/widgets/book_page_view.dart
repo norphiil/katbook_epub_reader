@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:html/dom.dart' as dom;
 
 import '../models/paragraph_element.dart';
 import '../models/reader_theme.dart';
@@ -21,6 +22,8 @@ class _PageSegment {
   final bool isDropCap;
   final bool isImage;
   final String? imagePath;
+  final ParagraphElement? paragraph;
+  final bool isFullParagraph;
   
   const _PageSegment({
     required this.paragraphIndex,
@@ -32,6 +35,8 @@ class _PageSegment {
     this.isDropCap = false,
     this.isImage = false,
     this.imagePath,
+    this.paragraph,
+    this.isFullParagraph = false,
   });
 }
 
@@ -190,34 +195,43 @@ class BookPageViewState extends State<BookPageView> with TickerProviderStateMixi
   void _startBuildingPages(Size pageSize) {
     if (_lastPageSize == pageSize && _lastFontSize == widget.fontSize && _pages.isNotEmpty) {
       if (_isLoading) {
-        setState(() => _isLoading = false);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            setState(() => _isLoading = false);
+          }
+        });
       }
       return;
     }
     
-    // Show loading state
-    if (!_isLoading) {
-      setState(() => _isLoading = true);
-    }
-    
-    _lastPageSize = pageSize;
-    _lastFontSize = widget.fontSize;
-    
-    // Build pages in microtask to avoid blocking UI
-    Future.microtask(() {
-      if (!mounted) return;
-      final pages = _buildPagesSync(pageSize);
+    // Defer setState to avoid calling it during build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       
-      setState(() {
-        _pages = pages;
-        _isLoading = false;
-      });
+      // Show loading state
+      if (!_isLoading) {
+        setState(() => _isLoading = true);
+      }
       
-      // Handle initial jump after pages are built
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      _lastPageSize = pageSize;
+      _lastFontSize = widget.fontSize;
+      
+      // Build pages in microtask to avoid blocking UI
+      Future.microtask(() {
         if (!mounted) return;
-        _handleInitialJump();
+        final pages = _buildPagesSync(pageSize);
+        if (!mounted) return;
+        
+        setState(() {
+          _pages = pages;
+          _isLoading = false;
+        });
+        
+        // Handle initial jump after pages are built
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          _handleInitialJump();
+        });
       });
     });
   }
@@ -231,9 +245,11 @@ class BookPageViewState extends State<BookPageView> with TickerProviderStateMixi
       
       final targetPage = _findPageForParagraph(targetParagraph);
       if (targetPage != null) {
-        setState(() {
-          _currentPage = targetPage;
-        });
+        if (mounted) {
+          setState(() {
+            _currentPage = targetPage;
+          });
+        }
         if (_pageController.hasClients) {
           _pageController.jumpToPage(targetPage);
         }
@@ -295,6 +311,7 @@ class BookPageViewState extends State<BookPageView> with TickerProviderStateMixi
             text: '',
             isImage: true,
             imagePath: imageSrc,
+            paragraph: para,
           ));
           currentPageHeight += imageHeight + 16;
           continue;
@@ -318,6 +335,7 @@ class BookPageViewState extends State<BookPageView> with TickerProviderStateMixi
           text: para.chapterTitle!,
           isChapterStart: true,
           chapterTitle: para.chapterTitle,
+          paragraph: para,
         ));
         currentPageHeight += titleHeight + 24;
       }
@@ -339,6 +357,7 @@ class BookPageViewState extends State<BookPageView> with TickerProviderStateMixi
           paragraphIndex: i,
           text: text,
           isHeading: true,
+          paragraph: para,
         ));
         currentPageHeight += headingHeight + 20;
         continue;
@@ -388,6 +407,8 @@ class BookPageViewState extends State<BookPageView> with TickerProviderStateMixi
           isFirstOfParagraph: isFirstSegment,
           isDropCap: needsDropCap && isFirstSegment,
           isChapterStart: para.isChapterStart && isFirstSegment,
+          paragraph: para,
+          isFullParagraph: fitResult.remainingText.isEmpty && isFirstSegment,
         ));
         
         currentPageHeight += fitResult.usedHeight + 8;
@@ -971,17 +992,182 @@ class BookPageViewState extends State<BookPageView> with TickerProviderStateMixi
       return _buildDropCapParagraph(segment);
     }
     
-    // Regular paragraph with first-line indent using RichText
-    final String indentText = segment.isFirstOfParagraph ? '\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0\u00A0' : ''; // Non-breaking spaces for indent
+    // Regular paragraph - CSS-aware rendering when possible
+    if (segment.isFullParagraph && segment.paragraph != null && widget.cssParser != null) {
+      return _buildCssAwareParagraph(segment);
+    }
     
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Text(
-        '$indentText${segment.text}',
+        segment.text,
         style: _getBodyTextStyle(),
         textAlign: TextAlign.justify,
       ),
     );
+  }
+
+  /// Get text alignment from CSS for a paragraph element
+  TextAlign _getTextAlignFromCss(ParagraphElement para) {
+    if (widget.cssParser == null) return TextAlign.justify;
+    final element = para.element;
+    final cssStyles = widget.cssParser!.getStylesForElement(
+      tagName: element.localName?.toLowerCase() ?? '',
+      className: element.className,
+      id: element.id,
+    );
+    final align = cssStyles['text-align'] ?? '';
+    if (align.contains('center')) return TextAlign.center;
+    if (align.contains('right')) return TextAlign.right;
+    if (align.contains('left')) return TextAlign.left;
+    return TextAlign.justify;
+  }
+
+  /// Build a CSS-aware paragraph for full (non-split) paragraphs
+  Widget _buildCssAwareParagraph(_PageSegment segment) {
+    final element = segment.paragraph!.element;
+    final cssParser = widget.cssParser!;
+
+    // Get paragraph-level CSS
+    final cssStyles = cssParser.getStylesForElement(
+      tagName: element.localName?.toLowerCase() ?? '',
+      className: element.className,
+      id: element.id,
+    );
+
+    // Text alignment
+    final textAlign = _getTextAlignFromCss(segment.paragraph!);
+
+    // Background color
+    Color? backgroundColor;
+    Color? textColor;
+    final bgStr = cssStyles['background-color'];
+    if (bgStr != null) {
+      final bgColor = EpubCssParser.parseColor(bgStr);
+      if (bgColor != null && !EpubCssParser.isDefaultLightBackground(bgColor)) {
+        backgroundColor = bgColor;
+        // For colored backgrounds, use CSS text color for proper contrast
+        for (final child in element.children) {
+          final childCss = cssParser.getStylesForElement(
+            tagName: child.localName?.toLowerCase() ?? '',
+            className: child.className,
+            id: child.id,
+          );
+          final colorStr = childCss['color'];
+          if (colorStr != null) {
+            textColor = EpubCssParser.parseColor(colorStr);
+            break;
+          }
+        }
+      }
+    }
+
+    // Build inline spans with CSS styles
+    final spans = _buildInlineSpansFromElement(element);
+    if (spans.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Text(
+          segment.text,
+          style: _getBodyTextStyle(),
+          textAlign: textAlign,
+        ),
+      );
+    }
+
+    final baseStyle = _getBodyTextStyle().copyWith(
+      color: textColor ?? widget.themeData.textColor,
+    );
+
+    if (backgroundColor != null) {
+      return Container(
+        margin: const EdgeInsets.symmetric(vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text.rich(
+          TextSpan(children: spans),
+          style: baseStyle,
+          textAlign: textAlign,
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Text.rich(
+        TextSpan(children: spans),
+        style: baseStyle,
+        textAlign: textAlign,
+      ),
+    );
+  }
+
+  /// Build inline text spans from an HTML element, applying CSS styles
+  List<InlineSpan> _buildInlineSpansFromElement(dom.Element element) {
+    final spans = <InlineSpan>[];
+
+    for (final node in element.nodes) {
+      if (node is dom.Text) {
+        final text = node.text.replaceAll(RegExp(r'\s+'), ' ');
+        if (text.isNotEmpty) {
+          spans.add(TextSpan(text: text));
+        }
+      } else if (node is dom.Element) {
+        final tag = node.localName?.toLowerCase() ?? '';
+        final text = node.text.replaceAll(RegExp(r'\s+'), ' ');
+
+        if (text.isEmpty) continue;
+
+        // Get CSS styles for this element
+        TextStyle? spanStyle;
+        if (widget.cssParser != null) {
+          final cssStyles = widget.cssParser!.getStylesForElement(
+            tagName: tag,
+            className: node.className,
+            id: node.id,
+          );
+
+          FontWeight? fw;
+          FontStyle? fs;
+
+          final fwStr = cssStyles['font-weight'] ?? '';
+          if (fwStr.contains('bold') || fwStr == '700' || fwStr == '800' || fwStr == '900') {
+            fw = FontWeight.bold;
+          }
+
+          final fsStr = cssStyles['font-style'] ?? '';
+          if (fsStr.contains('italic')) {
+            fs = FontStyle.italic;
+          }
+
+          if (fw != null || fs != null) {
+            spanStyle = TextStyle(fontWeight: fw, fontStyle: fs);
+          }
+        }
+
+        // Also respect HTML tags
+        switch (tag) {
+          case 'strong':
+          case 'b':
+            spanStyle = (spanStyle ?? const TextStyle()).copyWith(fontWeight: FontWeight.bold);
+            break;
+          case 'em':
+          case 'i':
+            spanStyle = (spanStyle ?? const TextStyle()).copyWith(fontStyle: FontStyle.italic);
+            break;
+          case 'u':
+            spanStyle = (spanStyle ?? const TextStyle()).copyWith(decoration: TextDecoration.underline);
+            break;
+        }
+
+        spans.add(TextSpan(text: text, style: spanStyle));
+      }
+    }
+
+    return spans;
   }
 
   Widget _buildImage(String imagePath, double maxWidth) {

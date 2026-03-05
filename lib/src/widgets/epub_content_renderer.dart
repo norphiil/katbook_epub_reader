@@ -250,20 +250,13 @@ class EpubContentRenderer extends StatelessWidget {
   /// Get margin/padding from style.
   EdgeInsets _getMargin(dom.Element element) {
     final style = _parseStyle(element);
-    double top = 0, bottom = 0, left = 0, right = 0;
+    double left = 0, right = 0;
     
     // Parse margin-left for indentation
     final marginLeft = style['margin-left'] ?? style['padding-left'] ?? '';
     if (marginLeft.isNotEmpty) {
       final value = _parsePixelValue(marginLeft);
       left = value.clamp(0, 100);
-    }
-    
-    // Parse text-indent for first line indent
-    final textIndent = style['text-indent'] ?? '';
-    if (textIndent.isNotEmpty) {
-      final value = _parsePixelValue(textIndent);
-      left += value.clamp(0, 50);
     }
     
     // Margin right
@@ -273,7 +266,7 @@ class EpubContentRenderer extends StatelessWidget {
       right = value.clamp(0, 100);
     }
     
-    return EdgeInsets.only(left: left, right: right, top: top, bottom: bottom);
+    return EdgeInsets.only(left: left, right: right);
   }
 
   double _parsePixelValue(String value) {
@@ -551,6 +544,38 @@ class EpubContentRenderer extends StatelessWidget {
     final sizeMultiplier = _getFontSizeMultiplier(element);
     final margin = _getMargin(element);
 
+    // Check for background color from EPUB CSS
+    Color? cssBackgroundColor;
+    Color? cssTextColor;
+    if (cssParser != null) {
+      final tagName = element.localName?.toLowerCase() ?? '';
+      final cssStyles = cssParser!.getStylesForElement(
+        tagName: tagName,
+        className: element.className,
+        id: element.id,
+      );
+      final bgStr = cssStyles['background-color'];
+      if (bgStr != null) {
+        final bgColor = EpubCssParser.parseColor(bgStr);
+        if (bgColor != null && !EpubCssParser.isDefaultLightBackground(bgColor)) {
+          cssBackgroundColor = bgColor;
+          // For colored backgrounds, use CSS text color for proper contrast
+          for (final child in element.children) {
+            final childCss = cssParser!.getStylesForElement(
+              tagName: child.localName?.toLowerCase() ?? '',
+              className: child.className,
+              id: child.id,
+            );
+            final colorStr = childCss['color'];
+            if (colorStr != null) {
+              cssTextColor = EpubCssParser.parseColor(colorStr);
+              break;
+            }
+          }
+        }
+      }
+    }
+
     // Build rich text with inline elements
     final spans = _buildInlineSpans(element);
     
@@ -561,10 +586,14 @@ class EpubContentRenderer extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(vertical: 4.0).add(margin),
+      decoration: cssBackgroundColor != null ? BoxDecoration(
+        color: cssBackgroundColor,
+        borderRadius: BorderRadius.circular(8),
+      ) : null,
       child: Text.rich(
         TextSpan(children: spans),
         style: TextStyle(
-          color: themeData.textColor,
+          color: cssTextColor ?? themeData.textColor,
           fontSize: fontSize * sizeMultiplier,
           fontStyle: isItalic ? FontStyle.italic : FontStyle.normal,
           fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
@@ -653,6 +682,34 @@ class EpubContentRenderer extends StatelessWidget {
           case 'img':
           case 'image':
             // Skip images in inline context - they'll be rendered separately
+            break;
+          case 'span':
+            {
+              TextStyle? spanStyle;
+              if (cssParser != null) {
+                final cssStyles = cssParser!.getStylesForElement(
+                  tagName: 'span',
+                  className: node.className,
+                  id: node.id,
+                );
+                FontWeight? fw;
+                FontStyle? fs;
+                final fwStr = cssStyles['font-weight'] ?? '';
+                if (fwStr.contains('bold') || fwStr == '700' || fwStr == '800' || fwStr == '900') {
+                  fw = FontWeight.bold;
+                }
+                final fsStr = cssStyles['font-style'] ?? '';
+                if (fsStr.contains('italic')) {
+                  fs = FontStyle.italic;
+                }
+                if (fw != null || fs != null) {
+                  spanStyle = TextStyle(fontWeight: fw, fontStyle: fs);
+                }
+              }
+              if (text.isNotEmpty) {
+                spans.add(TextSpan(text: text, style: spanStyle));
+              }
+            }
             break;
           default:
             if (text.isNotEmpty) {
