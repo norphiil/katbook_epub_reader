@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:html/dom.dart' as dom;
 
+import '../l10n/app_localizations.dart';
 import '../models/paragraph_element.dart';
 import '../models/reader_theme.dart';
 import '../parser/css_parser.dart';
@@ -743,8 +744,8 @@ class BookPageViewState extends State<BookPageView> with TickerProviderStateMixi
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                 child: _showPageInput 
-                    ? _buildPageInputField()
-                    : _buildPageIndicator(),
+                    ? _buildPageInputField(context)
+                    : _buildPageIndicator(context),
               ),
             ],
           );
@@ -753,7 +754,8 @@ class BookPageViewState extends State<BookPageView> with TickerProviderStateMixi
     );
   }
 
-  Widget _buildPageIndicator() {
+  Widget _buildPageIndicator(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return GestureDetector(
       onTap: _showPageInputDialog,
       child: Container(
@@ -775,7 +777,7 @@ class BookPageViewState extends State<BookPageView> with TickerProviderStateMixi
             ),
             const SizedBox(width: 8),
             Text(
-              'Page ${_currentPage + 1} / ${_pages.length}',
+              '${l10n?.pageLabel ?? 'Page'} ${_currentPage + 1} / ${_pages.length}',
               style: GoogleFonts.literata(
                 color: widget.themeData.textColor,
                 fontSize: 13,
@@ -787,12 +789,13 @@ class BookPageViewState extends State<BookPageView> with TickerProviderStateMixi
     );
   }
 
-  Widget _buildPageInputField() {
+  Widget _buildPageInputField(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          'Page ',
+          '${l10n?.pageLabel ?? 'Page'} ',
           style: GoogleFonts.literata(
             color: widget.themeData.textColor,
             fontSize: 13,

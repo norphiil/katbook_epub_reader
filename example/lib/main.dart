@@ -15,8 +15,27 @@ void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  late Locale _locale;
+
+  @override
+  void initState() {
+    super.initState();
+    _locale = const Locale('en'); // Default to english
+  }
+
+  void _setLocale(Locale locale) {
+    setState(() {
+      _locale = locale;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +52,7 @@ class MyApp extends StatelessWidget {
       // When using KatbookEpubReader in your own app, you MUST add these two lines:
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
-      locale: const Locale('fr'), // Default to French (original project language), change to Locale('en') for English or Locale('zh') for Chinese
+      locale: _locale,
       // Wrap with FocusScope to prevent focus-related errors on web
       builder: (context, child) {
         return FocusScope(
@@ -41,7 +60,7 @@ class MyApp extends StatelessWidget {
           child: child ?? const SizedBox.shrink(),
         );
       },
-      home: const HomePage(),
+      home: HomePage(onLocaleChanged: _setLocale),
     );
   }
 }

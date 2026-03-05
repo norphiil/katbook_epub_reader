@@ -14,7 +14,12 @@ import 'reader.dart';
 /// Dans votre application, vous pouvez directement utiliser
 /// [EpubReaderScreen] sans passer par cette page.
 class HomePage extends StatelessWidget {
-  const HomePage({super.key});
+  final void Function(Locale)? onLocaleChanged;
+
+  const HomePage({
+    super.key,
+    this.onLocaleChanged,
+  });
 
   // Example URLs for public domain EPUB books
   static const String _exampleUrl = 'https://www.example.url';
@@ -172,6 +177,7 @@ class HomePage extends StatelessWidget {
         builder: (context) => EpubReaderScreen(
           assetPath: assetPath,
           url: url,
+          onLocaleChanged: onLocaleChanged,
           onClose: () => Navigator.of(context).pop(),
         ),
       ),

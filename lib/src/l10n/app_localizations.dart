@@ -15,6 +15,13 @@ abstract class AppLocalizations {
 
   final String localeName;
 
+  // Map of language names (each in its own language)
+  static const Map<String, String> _languageNames = {
+    'en': 'English',
+    'zh': '中文',
+    'fr': 'Français',
+  };
+
   static AppLocalizations? of(BuildContext context) {
     return Localizations.of<AppLocalizations>(context, AppLocalizations);
   }
@@ -90,17 +97,16 @@ abstract class AppLocalizations {
   /// Label for font size increase button
   String get fontSizeIncrease;
 
+  /// Label for page in page view
+  String get pageLabel;
+
   /// Tooltip for the language button
   String get tooltipLanguage;
 
-  /// Label for English language
-  String get languageEnglish;
-
-  /// Label for Chinese language
-  String get languageChinese;
-
-  /// Get the display name for a locale
-  String getLocaleDisplayName(String languageCode);
+  /// Get the display name for a language code
+  String getLocaleDisplayName(String languageCode) {
+    return _languageNames[languageCode] ?? languageCode;
+  }
 }
 
 class _AppLocalizationsDelegate

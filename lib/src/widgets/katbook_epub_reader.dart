@@ -644,7 +644,7 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'English',
+                      l10n?.getLocaleDisplayName('en') ?? 'English',
                       style: TextStyle(
                         fontWeight: _currentLocale?.languageCode == 'en'
                             ? FontWeight.bold
@@ -672,7 +672,7 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      '中文',
+                      l10n?.getLocaleDisplayName('zh') ?? '中文',
                       style: TextStyle(
                         fontWeight: _currentLocale?.languageCode == 'zh'
                             ? FontWeight.bold
@@ -700,7 +700,7 @@ class KatbookEpubReaderState extends State<KatbookEpubReader> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Français',
+                      l10n?.getLocaleDisplayName('fr') ?? 'Français',
                       style: TextStyle(
                         fontWeight: _currentLocale?.languageCode == 'fr'
                             ? FontWeight.bold

@@ -62,22 +62,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get tooltipLanguage => 'Langue';
 
   @override
-  String get languageEnglish => 'Anglais';
-
-  @override
-  String get languageChinese => 'Chinois';
-
-  @override
-  String getLocaleDisplayName(String languageCode) {
-    switch (languageCode) {
-      case 'en':
-        return 'Anglais';
-      case 'zh':
-        return 'Chinois';
-      case 'fr':
-        return 'Français';
-      default:
-        return languageCode;
-    }
-  }
+  String get pageLabel => 'Page';
 }
+

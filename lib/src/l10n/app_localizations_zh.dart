@@ -32,7 +32,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get themeLight => '浅色';
 
   @override
-  String get themeSepia => ' sepia';
+  String get themeSepia => '棕褐色';
 
   @override
   String get themeDark => '深色';
@@ -62,20 +62,6 @@ class AppLocalizationsZh extends AppLocalizations {
   String get tooltipLanguage => '语言';
 
   @override
-  String get languageEnglish => '英文';
-
-  @override
-  String get languageChinese => '中文';
-
-  @override
-  String getLocaleDisplayName(String languageCode) {
-    switch (languageCode) {
-      case 'en':
-        return '英文';
-      case 'zh':
-        return '中文';
-      default:
-        return languageCode;
-    }
-  }
+  String get pageLabel => '页';
 }
+
