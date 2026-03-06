@@ -2,6 +2,23 @@
 
 All notable changes to the Katbook EPUB Reader package will be documented in this file.
 
+## [2.1.1] - 2026-03-06
+
+### Bug Fixes
+
+#### AssetManifest Compatibility
+- **Fixed Flutter 3.41+ AssetManifest Issue**: Updated example app to use `AssetManifest.loadFromAssetBundle()` API instead of manually loading and decoding `AssetManifest.json`
+- **Binary Manifest Support**: Now compatible with Flutter 3.16+ binary manifest format (AssetManifest.bin)
+- **Removed JSON Parsing**: Eliminated manual JSON decode workaround that was causing HTTP 404 errors on web platform
+- **Improved Asset Discovery**: More robust and future-proof asset loading mechanism using the official Flutter API
+
+### Changes
+
+#### Example App
+- Updated `_getEpubAssets()` method in `lib/homepage.dart` to use modern AssetManifest API
+- Removed unnecessary `dart:convert` import from example app
+- Enhanced debug logging for asset enumeration
+
 ## [2.1.0] - 2026-03-05
 
 ### Features
