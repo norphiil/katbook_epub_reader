@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -78,20 +76,20 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  /// List all EPUB files available in the assets folder
+  /// List all EPUB files available in the assets folder.
   Future<List<String>> _getEpubAssets() async {
     try {
-      final manifestJson = await rootBundle.loadString('AssetManifest.json');
-      final manifest = jsonDecode(manifestJson) as Map<String, dynamic>;
+      final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+      final allAssets = manifest.listAssets();
       final epubFiles = <String>[];
 
-      debugPrint('📄 AssetManifest keys count: ${manifest.keys.length}');
+      debugPrint('📄 Total assets count: ${allAssets.length}');
 
-      for (final key in manifest.keys) {
-        if (key.startsWith('assets/') && key.endsWith('.epub')) {
-          final filename = key.split('/').last;
+      for (final assetPath in allAssets) {
+        if (assetPath.startsWith('assets/') && assetPath.endsWith('.epub')) {
+          final filename = assetPath.split('/').last;
           epubFiles.add(filename);
-          debugPrint('✅ Found EPUB: $filename (path: $key)');
+          debugPrint('✅ Found EPUB: $filename (path: $assetPath)');
         }
       }
 
