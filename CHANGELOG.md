@@ -2,6 +2,16 @@
 
 All notable changes to the Katbook EPUB Reader package will be documented in this file.
 
+## [2.1.2] - 2026-03-07
+
+### Bug Fixes
+
+#### Chapter Content Duplication
+- **Fixed EPUB Parser Duplication**: Resolved critical bug where nested chapters referencing the same XHTML file without anchors would duplicate content multiple times
+- **Boundary-Based Content Extraction**: Implemented boundary tracking to ensure each chapter gets exactly its content portion, preventing overlaps
+- **Improved Anchor Handling**: Better handling of anchor-based chapter boundaries to correctly slice XHTML files shared by multiple TOC entries
+- **Nested Chapter Support**: Fixed issue where hierarchical TOC structures (parent → children in same file) would accumulate and repeat content
+
 ## [2.1.1] - 2026-03-06
 
 ### Bug Fixes
