@@ -28,9 +28,6 @@ class EpubContentParser {
   
   // Cache parsed HTML files
   final Map<String, List<dom.Element>> _parsedFiles = {};
-  
-  // Track which elements have been used (to avoid duplicates)
-  final Set<String> _usedFileKeys = {};
 
   EpubContentParser(this._book);
 
@@ -104,22 +101,15 @@ class EpubContentParser {
       
       // Find the content
       List<dom.Element>? elements;
-      String? matchingKey;
       for (final entry in _parsedFiles.entries) {
         final entryName = entry.key.split('/').last;
         if (entryName == fileName || entry.key == href) {
           elements = entry.value;
-          matchingKey = entry.key;
           break;
         }
       }
       
       if (elements == null || elements.isEmpty) continue;
-      
-      // Mark as used
-      if (matchingKey != null) {
-        _usedFileKeys.add(matchingKey);
-      }
       
       debugPrint('📖 Adding front matter: $fileName (${elements.length} elements)');
       
@@ -175,12 +165,19 @@ class EpubContentParser {
     // Start paragraph index after front matter paragraphs (if any)
     int paragraphIndex = _paragraphs.length;
 
-    for (final chapter in _book.Chapters!) {
+    final chapters = _book.Chapters!;
+    for (int i = 0; i < chapters.length; i++) {
+      final chapter = chapters[i];
+      // Determine the next sibling boundary so chapters know where to stop
+      final nextChapter = i + 1 < chapters.length ? chapters[i + 1] : null;
+
       final result = _processChapter(
         chapter: chapter,
         depth: 0,
         chapterIndex: chapterIndex,
         paragraphIndex: paragraphIndex,
+        nextBoundaryFile: nextChapter?.ContentFileName,
+        nextBoundaryAnchor: nextChapter?.Anchor,
       );
       
       _tableOfContents.add(result.node);
@@ -217,19 +214,30 @@ class EpubContentParser {
   }
 
   /// Process a single chapter and its subchapters.
+  ///
+  /// [nextBoundaryFile] and [nextBoundaryAnchor] define where the next sibling
+  /// (or parent's next sibling) starts, so this chapter knows where its content
+  /// ends. This prevents content duplication when multiple TOC entries reference
+  /// the same XHTML file.
   _ChapterResult _processChapter({
     required EpubChapter chapter,
     required int depth,
     required int chapterIndex,
     required int paragraphIndex,
+    String? nextBoundaryFile,
+    String? nextBoundaryAnchor,
   }) {
     final startIndex = paragraphIndex;
     final fileName = chapter.ContentFileName;
     
     debugPrint('  ${"  " * depth}📖 ${chapter.Title}');
 
-    // Get elements for this chapter
-    final elements = _getElementsForChapter(chapter);
+    // Get elements for this chapter (respecting boundaries)
+    final elements = _getElementsForChapter(
+      chapter,
+      nextBoundaryFile: nextBoundaryFile,
+      nextBoundaryAnchor: nextBoundaryAnchor,
+    );
     
     // Add paragraphs
     bool isFirst = true;
@@ -250,12 +258,31 @@ class EpubContentParser {
     int nextChapterIdx = chapterIndex + 1;
     
     if (chapter.SubChapters != null && chapter.SubChapters!.isNotEmpty) {
-      for (final sub in chapter.SubChapters!) {
+      final subs = chapter.SubChapters!;
+      for (int i = 0; i < subs.length; i++) {
+        final sub = subs[i];
+        
+        // Determine the next boundary for this sub-chapter
+        String? childNextFile;
+        String? childNextAnchor;
+        
+        if (i + 1 < subs.length) {
+          // Next sibling exists
+          childNextFile = subs[i + 1].ContentFileName;
+          childNextAnchor = subs[i + 1].Anchor;
+        } else {
+          // Last child → propagate parent's boundary
+          childNextFile = nextBoundaryFile;
+          childNextAnchor = nextBoundaryAnchor;
+        }
+        
         final result = _processChapter(
           chapter: sub,
           depth: depth + 1,
           chapterIndex: nextChapterIdx,
           paragraphIndex: paragraphIndex,
+          nextBoundaryFile: childNextFile,
+          nextBoundaryAnchor: childNextAnchor,
         );
         childNodes.add(result.node);
         nextChapterIdx = result.nextChapterIndex;
@@ -283,16 +310,29 @@ class EpubContentParser {
   }
 
   /// Get elements belonging to a specific chapter.
-  List<dom.Element> _getElementsForChapter(EpubChapter chapter) {
+  ///
+  /// Uses boundary information to determine exactly which elements belong to
+  /// this chapter, preventing duplication when multiple TOC entries reference
+  /// the same XHTML file (with or without anchors).
+  ///
+  /// - For chapters with subchapters: content ends where the first same-file
+  ///   sub-chapter starts. If that sub-chapter has no anchor and the parent
+  ///   has no anchor either, the parent gets no content (they start at the
+  ///   same position).
+  /// - For leaf chapters: content ends where [nextBoundaryFile]/[nextBoundaryAnchor]
+  ///   starts (the next sibling or a propagated parent boundary).
+  List<dom.Element> _getElementsForChapter(
+    EpubChapter chapter, {
+    String? nextBoundaryFile,
+    String? nextBoundaryAnchor,
+  }) {
     final fileName = chapter.ContentFileName;
     if (fileName == null) return [];
 
-    // Find matching file key
-    String? matchingKey;
+    // Find matching file
     List<dom.Element>? allElements;
     for (final entry in _parsedFiles.entries) {
       if (_fileNamesMatch(entry.key, fileName)) {
-        matchingKey = entry.key;
         allElements = entry.value;
         break;
       }
@@ -302,14 +342,8 @@ class EpubContentParser {
 
     final anchor = chapter.Anchor;
     final hasSubchapters = chapter.SubChapters?.isNotEmpty ?? false;
-    
-    // For chapters without anchors in already-used files, return empty
-    // But only if file was used WITHOUT an anchor (i.e., fully consumed)
-    if (_usedFileKeys.contains(matchingKey) && anchor == null && !hasSubchapters) {
-      return [];
-    }
 
-    // Find start position
+    // Find start position (from anchor or beginning of file)
     int startIdx = 0;
     if (anchor != null) {
       for (int i = 0; i < allElements.length; i++) {
@@ -322,31 +356,48 @@ class EpubContentParser {
 
     // Find end position
     int endIdx = allElements.length;
+    
     if (hasSubchapters) {
+      // End at the first sub-chapter that's in the same file
       for (final sub in chapter.SubChapters!) {
         final subAnchor = sub.Anchor;
         final subFile = sub.ContentFileName;
         
         if (_fileNamesMatch(fileName, subFile)) {
           if (subAnchor != null) {
-            for (int i = startIdx + 1; i < allElements.length; i++) {
+            // Sub-chapter starts at an anchor → parent content ends there
+            for (int i = startIdx; i < allElements.length; i++) {
               if (EpubHtmlParser.elementContainsAnchor(allElements[i], subAnchor)) {
                 endIdx = i;
                 break;
               }
             }
+          } else {
+            // Sub-chapter references the same file without anchor
+            // → it starts at the same position, so parent has no own content
+            endIdx = startIdx;
           }
           break;
         }
       }
+    } else if (nextBoundaryFile != null &&
+        _fileNamesMatch(fileName, nextBoundaryFile)) {
+      // Leaf chapter: end at the next sibling's position in the same file
+      if (nextBoundaryAnchor != null) {
+        for (int i = startIdx + 1; i < endIdx; i++) {
+          if (EpubHtmlParser.elementContainsAnchor(
+              allElements[i], nextBoundaryAnchor)) {
+            endIdx = i;
+            break;
+          }
+        }
+      }
+      // If next boundary is in same file with no anchor, it would start at
+      // the beginning of the file. Since current chapter already started at
+      // or after that, keep endIdx as-is (unusual edge case).
     }
 
-    // Mark file as used ONLY if we're taking all content without anchor
-    if (anchor == null && !hasSubchapters && matchingKey != null) {
-      _usedFileKeys.add(matchingKey);
-    }
-
-    // Return a copy of the sublist
+    // Return elements or empty if range is invalid
     if (startIdx >= endIdx) return [];
     return allElements.sublist(startIdx, endIdx);
   }
