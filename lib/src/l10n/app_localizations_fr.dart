@@ -63,5 +63,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get pageLabel => 'Page';
-}
 
+  @override
+  String get preparingPages => 'Préparation des pages...';
+}

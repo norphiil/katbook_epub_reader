@@ -42,10 +42,13 @@ import 'package:katbook_epub_reader/katbook_epub_reader.dart';
 
 ## Dependencies
 
-- **epubx** ^4.0.0 - EPUB parsing
+- **epubx_kuebiko** ^4.2.1 - EPUB parsing
 - **html** ^0.15.6 - HTML DOM parsing
 - **scrollable_positioned_list** ^0.3.8 - Efficient list scrolling
 - **collection** ^1.19.1 - Collection utilities
+- **google_fonts** ^8.0.2 - Custom fonts for better typography
+- **intl** ^0.20.2 - Internationalization support
+- **flutter_localizations** - Flutter localization framework
 
 ## Example App
 

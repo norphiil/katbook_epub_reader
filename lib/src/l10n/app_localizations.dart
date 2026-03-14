@@ -103,6 +103,9 @@ abstract class AppLocalizations {
   /// Tooltip for the language button
   String get tooltipLanguage;
 
+  /// Message displayed when pages are being prepared
+  String get preparingPages;
+
   /// Get the display name for a language code
   String getLocaleDisplayName(String languageCode) {
     return _languageNames[languageCode] ?? languageCode;
@@ -115,8 +118,7 @@ class _AppLocalizationsDelegate
 
   @override
   Future<AppLocalizations> load(Locale locale) {
-    return SynchronousFuture<AppLocalizations>(
-        lookupAppLocalizations(locale));
+    return SynchronousFuture<AppLocalizations>(lookupAppLocalizations(locale));
   }
 
   @override

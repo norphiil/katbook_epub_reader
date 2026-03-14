@@ -63,5 +63,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pageLabel => 'Page';
-}
 
+  @override
+  String get preparingPages => 'Preparing pages...';
+}

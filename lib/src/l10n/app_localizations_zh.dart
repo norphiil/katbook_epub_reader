@@ -63,5 +63,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get pageLabel => '页';
-}
 
+  @override
+  String get preparingPages => '正在准备页码...';
+}
