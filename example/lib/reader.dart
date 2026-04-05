@@ -72,7 +72,7 @@ class EpubReaderScreen extends StatefulWidget {
     super.key,
     this.epubBytes,
     this.url,
-    this.assetPath,
+    this.assetPath, 
     this.onClose,
     this.initialTheme = ReaderTheme.dark,
     this.initialFontSize = 16.0,
